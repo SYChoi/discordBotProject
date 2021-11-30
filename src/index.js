@@ -26,10 +26,29 @@ client.on("messageCreate", async function(message) {
     const command = args.shift().toLowerCase();
 
     if (command === "ping") {
-        message.reply("pong!");
+        await message.reply("pong!");
+    } else if (command === "명령어") {
+        const commands = [
+          ...USER_MANAGE_COMMANDS,
+        ];
+        const commandMessages = getCommandMessages(commands);
+        await message.reply(commandMessages);
     } else if (USER_MANAGE_COMMANDS.includes(command)) {
         await userManageRoute(message, command, args);
     }
 });
 
 client.login(process.env.BOT_TOKEN);
+
+function getCommandMessages(commands) {
+    const commandMessagePreset = {
+        'ping': 'ping: 연결 확인(pong)',
+        '출석체크': '출석체크, 출첵, 출석, ㅊㅊ: 출석을 체크해줍니다.',
+    }
+    return commands.map(command => commandMessagePreset[command])
+        .filter(commandMessage => !!commandMessage)
+        .reduce((result, command) => {
+          result = result + '\n' + command
+          return result;
+        });
+}
