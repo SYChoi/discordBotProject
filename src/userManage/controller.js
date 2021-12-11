@@ -1,17 +1,18 @@
 import { connectDB, runQuery } from "../DBController";
 import { User } from "../user/model";
 import { findById } from "../user/controller";
+import { DateTime } from "luxon";
 
 const loginReward = 1000;
-const today = new Date();
 
 export async function attendanceCheck (message) {
     const db = await connectDB();
     const id = message.author.id;
     const user = await findById(db, id);
+    const today = DateTime.local();
     if (!user) {
-        const newUser = new User(id, loginReward, today.getTime());
-        const insertSQL = `INSERT INTO user(id, point, lastLogin) VALUES (${id}, ${loginReward}, ${today.getTime()})`;
+        const newUser = new User(id, loginReward, today.toMillis());
+        const insertSQL = `INSERT INTO user(id, point, lastLogin) VALUES (${id}, ${loginReward}, ${today.toMillis()})`;
         await runQuery(db, insertSQL);
         db.close();
         message.reply(
@@ -21,9 +22,9 @@ export async function attendanceCheck (message) {
         return;
     }
 
-    const lastLogin = new Date(user.getLastLogin());
+    const lastLogin = DateTime.fromMillis(user.getLastLogin());
     if (dateString(lastLogin) === dateString(today)) {
-        message.reply("오늘은 이미 출석체크를 하셨습니다. 내일도 출석체크 해주세요~!!");
+        message.reply(`오늘(${dateString(today)})은 이미 출석체크를 하셨습니다. 내일도 출석체크 해주세요~!!`);
         db.close();
         return;
     } else {
@@ -36,9 +37,16 @@ export async function attendanceCheck (message) {
 }
 
 function dateString(date) {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const day = date.getDate();
+    return date.toFormat("yyyy년 MM월 dd일")
+}
 
-    return `${year}년 ${month}월 ${day}일`;
+export async function checkPoint (message) {
+    const db = await connectDB();
+    const id = message.author.id;
+    const user = await findById(db, id);
+
+    const point = user.getPoint();
+    message.reply(`현재 보유하신 포인트는 ${point}pts 입니다.`);
+    db.close();
+    return;
 }
